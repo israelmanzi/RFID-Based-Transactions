@@ -42,6 +42,14 @@ products = [
     {"id": 23, "name": "Lay's Sensations", "price": 2},
 ]
 
+#print products
+print("##################################################")
+print("\tProducts:")
+for product in products:
+    print(f"\t{product['id']}. {product['name']} - ${product['price']}")
+print("##################################################")
+
+
 purchased = products[0]
 uuid = ""
 
@@ -51,6 +59,7 @@ if __name__ == '__main__':
     while True:
         balance = 0
         is_card_new = True
+        points = 0
         if ser.in_waiting > 0:
             line = ser.readline().decode('utf-8').encode('utf-8').decode('utf-8').strip()
             # print(line)
@@ -61,8 +70,6 @@ if __name__ == '__main__':
                     if uuid in f.read():
                         is_card_new = False
                 # is_card_new = False if uuid in card_store else True
-
-                print("Is card new: " + str(is_card_new))
                             
                 print("##################################################")
                 print(f"\tCard detected!: {uuid}")
@@ -103,6 +110,8 @@ if __name__ == '__main__':
                     if (balance >= product["price"]):
                         balance -= product["price"]
                         ser.write(f"{balance}\n".encode('utf-8'))
+
+                        ser.write(f"{points}\n".encode('utf-8'))
 
                         purchased = product
 

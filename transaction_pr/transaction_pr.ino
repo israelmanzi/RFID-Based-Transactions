@@ -1,5 +1,6 @@
 #include <SPI.h>
 #include <MFRC522.h>
+#include <stdlib.h>
 #define RST_PIN 9
 #define SS_PIN 10
 MFRC522 mfrc522(SS_PIN, RST_PIN);
@@ -78,9 +79,16 @@ void loop() {
   char charArray[res.length() + 1];
   res.toCharArray(charArray, sizeof(charArray));
 
+  String ps = Serial.readString();
+  int points = atoi(ps.c_str());
+
+  Serial.println("Points: " + points);
+
+  byte* pointBuff = (byte*)&points;
+
   byte* byteArray = (byte*)charArray;
 
-  writeBytesToBlock(block, byteArray, res);
+  writeBytesToBlock(block, byteArray, pointBuff, res);
 
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
@@ -95,7 +103,7 @@ void printHex(byte *buffer, byte bufferSize) {
   delay(500);
 }
 
-void writeBytesToBlock(byte block, byte buff[], String resp) {
+void writeBytesToBlock(byte block, byte buff[], byte pointBuff[], String resp) {
   card_status = mfrc522.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, block, &key, &(mfrc522.uid));
 
   if (card_status != MFRC522::STATUS_OK) {
@@ -110,6 +118,7 @@ void writeBytesToBlock(byte block, byte buff[], String resp) {
   }
   // Write block
   card_status = mfrc522.MIFARE_Write(block, buff, 16);
+  mfrc522.MIFARE_Write(6, pointBuff, 16);
 
   if (card_status != MFRC522::STATUS_OK) {
     Serial.print(F("MIFARE_Write() failed: "));
