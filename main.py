@@ -10,7 +10,7 @@ ser = serial.Serial(
     timeout=1
 )
 
-open('uuid_store.txt', 'w').close()
+card_store = open('uuid_store.txt', 'r').read().split('\n')
 
 print("Program start ....")
 print("Waiting for PICC ...")
@@ -43,26 +43,45 @@ products = [
 ]
 
 purchased = products[0]
+uuid = ""
 
 ser.flush()
 
 if __name__ == '__main__':
     while True:
         balance = 0
-
+        is_card_new = True
         if ser.in_waiting > 0:
-            line = ser.readline().decode('utf-8').strip()
+            line = ser.readline().decode('utf-8').encode('utf-8').decode('utf-8').strip()
             # print(line)
 
             if (line.startswith("UUID: ")):
+                uuid = line.removeprefix("UUID: ").strip()
+                with open('uuid_store.txt') as f:
+                    if uuid in f.read():
+                        is_card_new = False
+                # is_card_new = False if uuid in card_store else True
+
+                print("Is card new: " + str(is_card_new))
+                            
                 print("##################################################")
-                print("\tCard detected!")
-                print("\tUUID: " + line.removeprefix("UUID: "))
+                print(f"\tCard detected!: {uuid}")
+                # print("\tUUID: " + line.removeprefix("UUID: "))
                 print("##################################################")
 
-                # store uuid in file "uuid_store.txt"
-                with open("uuid_store.txt", "w") as file:
-                    file.write(line.removeprefix("UUID: "))
+                # # store uuid in file "uuid_store.txt"
+                # with open("uuid_store.txt", "w") as file:
+                #     file.write(line.removeprefix("UUID: "))
+
+                if (is_card_new):
+                    print("\tNew client detected!")
+                    print("\tRegistering client ...")
+                    # store uuid in file "uuid_store.txt"
+                    with open("uuid_store.txt", "a+") as file:
+                        file.write(uuid + "\n")
+                    print("\tClient saved!")
+                else:
+                    print("\tClient already exists!")
 
             if (line.startswith("Balance: ")):
                 print("##################################################")
@@ -100,10 +119,11 @@ if __name__ == '__main__':
                 balance = int(line.removeprefix("Data saved: "))
                 # store logs in file "transaction_logs.txt" { id, name, price, balance }
                 with open("transaction_logs.txt", "a+") as file:
-                    file.write(
-                        f"{purchased['id']}, {purchased['name']}, {purchased['price']}, {balance}, {datetime.now()}\n")
 
-                print("\tData saved!")
+                    file.write(
+                        f"{uuid, purchased['id']}, {purchased['name']}, {purchased['price']}, {balance}, {datetime.now()}\n")
+
+                print(f"\tPurchased product: {purchased['name']} successfully!")
 
             elif (line.startswith("Data not saved.")):
                 print("\tData not saved!")
@@ -111,82 +131,4 @@ if __name__ == '__main__':
         else:
             continue
 
-        # balance = 0
-        # if ser.in_waiting > 0:
-        #     line = ser.readline().decode('utf-8').strip()
-
-        #     print(line)
-
-        #     if (line.startswith("Balance: ")):
-        #         print(line)
-        #         balance = int(line.removeprefix("Balance: "))
-
-        #         print(f"Balance on PICC: {balance}")
-
-        #         if True:
-        #             product_id = int(input("Enter product id: "))
-
-        #             product = next((item for item in products if item["id"] == product_id), None)
-
-        #             ser.write(f"{products[0]['id'] + products[0]['price']}#\n".encode('utf-8'))
-
-        #             if (product):
-        #                 print(f"Product: {product['name']}")
-        #                 print(f"Price: {product['price']}")
-
-        #                 if (balance >= product["price"]):
-        #                     balance -= product["price"]
-        #                     print(f"Balance: {balance}")
-        #                     # ser.write(f"New: {balance}\n".encode('utf-8'))
-        #                     print(f"New balance: {balance}")
-        #                     ser.write(balance)
-        #                 else:
-        #                     print("Insufficient funds")
-        #                     # ser.write("Insufficient funds\n".encode('utf-8'))
-        #             else:
-        #                 print("Product not found")
-        #                 # ser.write("Product not found\n".encode('utf-8'))
-
-            # else:
-            # print(line)
-
-            # if (line.startswith("[PIIC ready!]")):
-            # # if (line.startswith("Enter funds you want to store to the card, ending with #!")):
-            #     print("Enter funds you want to store to the card, ending with #")
-            #     funds = int(input("Enter funds: "))
-            #     ser.write(f"{funds}#\n".encode('utf-8'))
-
-            #     balance += funds
-
-            #     print(f"Balance: {balance}")
-
-            # elif (line.startswith("Funds: ")):
-            #     balance = int(line.removeprefix("Funds: "))
-
-            #     print(f"Balance on PICC: {balance}")
-
-            #     while True:
-            #         product_id = int(input("Enter product id: "))
-
-            #         product = next((item for item in products if item["id"] == product_id), None)
-
-            #         if (product):
-            #             print(f"Product: {product['name']}")
-            #             print(f"Price: {product['price']}")
-
-            #             if (balance >= product["price"]):
-            #                 balance -= product["price"]
-            #                 print(f"Balance: {balance}")
-            #                 # ser.write(f"New: {balance}\n".encode('utf-8'))
-            #                 print(f"New balance: {balance}")
-            #                 ser.write(balance)
-            #             else:
-            #                 print("Insufficient funds")
-            #                 # ser.write("Insufficient funds\n".encode('utf-8'))
-            #         else:
-            #             print("Product not found")
-            #             # ser.write("Product not found\n".encode('utf-8'))
-
-            # # else:
-            # #     print(line)
-            #     # ser.write(line.encode('utf-8'))
+ser.close()

@@ -5,6 +5,9 @@
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 MFRC522::MIFARE_Key key;
 MFRC522::StatusCode card_status;
+
+byte nuidPICC[4];
+
 void setup() {
   Serial.begin(9600);
   SPI.begin();
@@ -12,6 +15,7 @@ void setup() {
   //  Serial.println(F("Enter data, ending with #"));
   Serial.println("");
 }
+
 void loop() {
   for (byte i = 0; i < 6; i++) {
     key.keyByte[i] = 0xFF;
@@ -24,6 +28,14 @@ void loop() {
     Serial.println("[Bring PIIC closer to PCD]");
     return;
   }
+
+  for (byte i = 0; i < 4; i++) {
+    nuidPICC[i] = mfrc522.uid.uidByte[i];
+  }
+
+  Serial.print("UUID: ");
+  printHex(mfrc522.uid.uidByte, mfrc522.uid.size);
+  Serial.println();
 
   byte buffr[16];
   byte block = 4;
@@ -74,6 +86,15 @@ void loop() {
   mfrc522.PCD_StopCrypto1();
   delay(500);
 }
+
+void printHex(byte *buffer, byte bufferSize) {
+  for (byte i = 0; i < bufferSize; i++) {
+    Serial.print(buffer[i] < 0x10 ? " 0" : " ");
+    Serial.print(buffer[i], HEX);
+  }
+  delay(500);
+}
+
 void writeBytesToBlock(byte block, byte buff[], String resp) {
   card_status = mfrc522.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, block, &key, &(mfrc522.uid));
 
